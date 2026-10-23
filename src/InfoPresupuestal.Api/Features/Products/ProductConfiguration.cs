@@ -20,6 +20,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Stock).HasColumnName("stock");
         builder.Property(p => p.CreatedAtUtc).HasColumnName("created_at_utc");
 
-        builder.HasIndex(p => p.Name).IsUnique();
+        // El nombre es único dentro de cada tenant, no en toda la base.
+        builder.HasIndex(p => new { p.TenantId, p.Name }).IsUnique();
     }
 }
