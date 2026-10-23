@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,xml,csproj,props,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_sort_system_directives_first = true
+
+# Reglas pensadas para bibliotecas públicas/VB que no aplican a una API
+dotnet_diagnostic.CA1000.severity = none # miembros estáticos en tipos genéricos (Result<T>.Success)
+dotnet_diagnostic.CA1716.severity = none # "Error" choca con una palabra reservada de VB
+dotnet_diagnostic.CA1515.severity = none # los tipos de contrato HTTP son públicos a propósito
+
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none # nombres de prueba con guiones bajos
+dotnet_diagnostic.CA2007.severity = none

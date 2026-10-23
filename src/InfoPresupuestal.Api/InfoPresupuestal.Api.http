@@ -1,0 +1,16 @@
+@api = http://localhost:5080
+
+### Crear producto
+# @name create
+POST {{api}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Laptop",
+  "description": "14 pulgadas",
+  "price": 1299.90,
+  "stock": 10
+}
+
+### Obtener producto por id (la segunda llamada sale de Redis)
+GET {{api}}/api/products/{{create.response.body.$.id}}
