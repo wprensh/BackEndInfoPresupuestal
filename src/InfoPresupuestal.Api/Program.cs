@@ -3,6 +3,7 @@ using InfoPresupuestal.Api.Common.Abstractions;
 using InfoPresupuestal.Api.Common.Caching;
 using InfoPresupuestal.Api.Common.Endpoints;
 using InfoPresupuestal.Api.Common.Errors;
+using InfoPresupuestal.Api.Common.MultiTenancy;
 using InfoPresupuestal.Api.Common.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 var assembly = typeof(Program).Assembly;
 
 // Infraestructura transversal (Common/)
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddOperationTransformer<TenantOpenApiTransformer>());
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddMultiTenancy();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddCaching(builder.Configuration);
 

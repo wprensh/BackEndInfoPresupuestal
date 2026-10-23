@@ -1,4 +1,5 @@
 using System.Reflection;
+using InfoPresupuestal.Api.Common.MultiTenancy;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace InfoPresupuestal.Api.Common.Endpoints;
@@ -15,11 +16,14 @@ public static class EndpointExtensions
         return services;
     }
 
+    /// <summary>Mapea todos los slices en un grupo que exige tenant.</summary>
     public static IApplicationBuilder MapEndpoints(this WebApplication app)
     {
+        var group = app.MapGroup(string.Empty).RequireTenant();
+
         foreach (var endpoint in app.Services.GetRequiredService<IEnumerable<IEndpoint>>())
         {
-            endpoint.MapEndpoint(app);
+            endpoint.MapEndpoint(group);
         }
 
         return app;
