@@ -2,7 +2,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY global.json Directory.Build.props Directory.Packages.props ./
+# .editorconfig define la severidad de los analizadores (TreatWarningsAsErrors): sin él, el build falla.
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
 COPY src/InfoPresupuestal.Api/InfoPresupuestal.Api.csproj src/InfoPresupuestal.Api/
 RUN dotnet restore src/InfoPresupuestal.Api/InfoPresupuestal.Api.csproj
 
