@@ -72,7 +72,7 @@ erDiagram
 - **Historial de precios.** El precio no es una columna de `insumo`: vive en `insumo_precio`, con una fila por fecha de vigencia. Un precio nuevo agrega una fila y nunca sobrescribe el anterior, así un presupuesto viejo conserva el precio con que se hizo. La vista `presupuesto.v_insumo_vigente` devuelve cada insumo con su precio más reciente.
 - **Multi-tenant, igual que la API.** Cada tabla de negocio lleva `tenant_id`. Las llaves foráneas incluyen el tenant (`(tenant_id, clasificacion_id)` y `(tenant_id, insumo_id)`), así la base rechaza relacionar datos de dos tenants distintos. Los catálogos `tipo_insumo` y `unidad_medida` son globales.
 - **Unicidad sin importar mayúsculas.** Un insumo es único por tenant, tipo, descripción y unidad, y la clasificación por tenant y nombre. Además cada insumo recibe un código legible por tenant (`MAT-0001`, `EQU-0001`, `MO-0001`), asignado en el orden del Excel.
-- **Dinero en `numeric(18,2)`** con moneda `COP`. Supuse pesos colombianos por los valores y los términos del archivo (A.C.P.M., por ejemplo).
+- **Dinero en `numeric(18,2)`** con moneda `COP` (pesos colombianos, confirmado por el usuario). La columna `moneda` permite cargar otras monedas más adelante.
 - **Búsqueda.** Un índice trigram (`pg_trgm`) sobre `descripcion` acelera `ILIKE '%tubo%'` y las búsquedas por similitud (`descripcion % 'tubo pvc 4'`).
 - **Staging separado.** El Excel se copia sin cambios a `carga`, y las reglas de limpieza viven en la vista `carga.v_insumo_normalizado`. Así cualquier dato se puede rastrear hasta su hoja y fila de origen.
 
