@@ -1,7 +1,9 @@
+using InfoPresupuestal.Api.Common.MultiTenancy;
+
 namespace InfoPresupuestal.Api.Features.Products;
 
 /// <summary>Entidad de la feature Products. Se crea solo con <see cref="Create"/>, que protege sus invariantes.</summary>
-public sealed class Product
+public sealed class Product : ITenantEntity
 {
     private Product()
     {
@@ -9,6 +11,9 @@ public sealed class Product
     }
 
     public Guid Id { get; private set; }
+
+    /// <summary>Lo asigna la persistencia al insertar; el dominio no lo elige.</summary>
+    public string TenantId { get; private set; } = string.Empty;
 
     public string Name { get; private set; } = string.Empty;
 

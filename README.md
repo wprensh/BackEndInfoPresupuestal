@@ -1,6 +1,6 @@
 # InfoPresupuestal · BackEnd
 
-API web en **.NET 9** (Minimal APIs) organizada con **Vertical Slice Architecture**, con **PostgreSQL** vía Entity Framework Core 9 y **Redis** como caché distribuida.
+API web en **.NET 9** (Minimal APIs) organizada con **Vertical Slice Architecture**, **multi-tenant**, con **PostgreSQL** vía Entity Framework Core 9 y **Redis** como caché distribuida.
 
 ## Comandos
 
@@ -13,6 +13,7 @@ dotnet test
 
 - OpenAPI en `http://localhost:5080/openapi/v1.json` (solo Development).
 - `src/InfoPresupuestal.Api/InfoPresupuestal.Api.http` tiene solicitudes de ejemplo.
+- Toda solicitud a `/api/*` lleva el header `X-Tenant-Id`. En Development existen los tenants `demo` y `acme` (`MultiTenancy:Tenants` en `appsettings.Development.json`).
 - Cadenas de conexión: `ConnectionStrings:Postgres` y `ConnectionStrings:Redis`. Fuera de Development van por variables de entorno (`ConnectionStrings__Postgres`) o user-secrets, nunca en `appsettings.json`.
 - Nueva migración: `dotnet ef migrations add <Nombre> -p src/InfoPresupuestal.Api -o Common/Persistence/Migrations`.
 
@@ -34,8 +35,16 @@ BackEndInfoPresupuestal.sln
 │   │   │   ├── DistributedCacheService.cs   # IDistributedCache + System.Text.Json
 │   │   │   ├── CachedQueryHandler.cs        # decorador cache-aside para ICachedQuery
 │   │   │   └── CachingServiceCollectionExtensions.cs   # AddStackExchangeRedisCache
+│   │   ├── MultiTenancy/
+│   │   │   ├── ITenantContext.cs / TenantContext.cs   # tenant de la solicitud (scoped)
+│   │   │   ├── ITenantEntity.cs             # marca entidades con TenantId
+│   │   │   ├── TenantResolutionFilter.cs    # lee X-Tenant-Id y lo valida contra ITenantStore
+│   │   │   ├── ITenantStore.cs / ConfigurationTenantStore.cs   # catálogo de tenants (hoy en configuración)
+│   │   │   ├── TenantSaveChangesInterceptor.cs   # asigna TenantId al insertar, bloquea escrituras cruzadas
+│   │   │   ├── TenantCacheService.cs        # antepone tenant:{id}: a cada clave de caché
+│   │   │   └── TenantOpenApiTransformer.cs  # documenta el header en OpenAPI
 │   │   ├── Persistence/
-│   │   │   ├── AppDbContext.cs              # aplica las IEntityTypeConfiguration de cada feature
+│   │   │   ├── AppDbContext.cs              # configuraciones de cada feature + filtro global por tenant
 │   │   │   ├── PersistenceServiceCollectionExtensions.cs  # UseNpgsql + reintentos
 │   │   │   └── Migrations/
 │   │   ├── Endpoints/                       # IEndpoint, descubrimiento y Result → ProblemDetails
@@ -76,6 +85,32 @@ BackEndInfoPresupuestal.sln
 9. **Errores esperados con `Result<T>`**, convertidos a ProblemDetails (400, 404, 409). Las excepciones quedan para lo inesperado y las atrapa `GlobalExceptionHandler`.
 10. **La validación ocurre antes del handler**, en `ValidationFilter<T>`; la entidad además protege sus invariantes en `Product.Create`.
 11. **Consultas con `AsNoTracking` y proyección**, para leer solo las columnas de la respuesta.
+12. **El aislamiento por tenant es automático y falla cerrado.** Ningún slice lee ni escribe `TenantId`:
+    - el grupo de endpoints exige un tenant válido (`RequireTenant`) antes de validar o ejecutar el handler;
+    - toda entidad `ITenantEntity` recibe la columna `tenant_id`, un índice y un filtro global de EF Core;
+    - el interceptor asigna el tenant al insertar y rechaza modificar o borrar filas de otro tenant;
+    - `ICacheService` ya llega aislado por tenant;
+    - si algo intenta consultar sin tenant resuelto, `TenantContext` lanza una excepción en lugar de devolver datos.
+13. **Las restricciones únicas incluyen el tenant** (por ejemplo `(tenant_id, name)` en `products`).
+14. **`IgnoreQueryFilters()` solo en código administrativo explícito**, nunca en un slice de tenant.
+
+## Multi-tenant
+
+Modelo: **una base compartida con columna `tenant_id`** en cada tabla de negocio.
+
+```
+Solicitud con X-Tenant-Id: acme
+  → TenantResolutionFilter: formato [a-z0-9-], existe en ITenantStore → TenantContext = acme
+      (sin header → 400 Tenant.Missing · desconocido → 404 Tenant.NotFound)
+  → ValidationFilter → Handler
+      ├─ EF Core: WHERE tenant_id = 'acme' en cada consulta; INSERT con tenant_id = 'acme'
+      └─ Redis: infopresupuestal:tenant:acme:products:{id}
+```
+
+Siguientes pasos previstos:
+- Con autenticación, `TenantResolutionFilter` toma el tenant de un claim del JWT y no del header.
+- El catálogo de tenants puede pasar de configuración a una tabla implementando otro `ITenantStore`.
+- Un tenant que necesite base propia se resuelve con una cadena de conexión por tenant sin cambiar los slices.
 
 ### Flujo de `GET /api/products/{id}`
 
@@ -90,7 +125,7 @@ GetProductByIdEndpoint
 
 1. Crear `Features/<Feature>/<CasoDeUso>/` con `…Command` o `…Query`, `…Handler`, `…Response`, `…Endpoint` (y `…Validator` / `…Mapping` si aplica).
 2. Si es una consulta cacheable, implementar `ICachedQuery<TResponse>`.
-3. Si hay entidades nuevas, agregar su `IEntityTypeConfiguration` y una migración.
+3. Si hay entidades nuevas, implementar `ITenantEntity` (salvo que sean globales), agregar su `IEntityTypeConfiguration` y una migración.
 
 ## Decisiones
 

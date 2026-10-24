@@ -1,9 +1,11 @@
 @api = http://localhost:5080
+@tenant = acme
 
 ### Crear producto
 # @name create
 POST {{api}}/api/products
 Content-Type: application/json
+X-Tenant-Id: {{tenant}}
 
 {
   "name": "Laptop",
@@ -14,3 +16,8 @@ Content-Type: application/json
 
 ### Obtener producto por id (la segunda llamada sale de Redis)
 GET {{api}}/api/products/{{create.response.body.$.id}}
+X-Tenant-Id: {{tenant}}
+
+### El mismo producto desde otro tenant devuelve 404
+GET {{api}}/api/products/{{create.response.body.$.id}}
+X-Tenant-Id: demo

@@ -52,9 +52,17 @@ namespace InfoPresupuestal.Api.Common.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("stock");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
                     b.ToTable("products", (string)null);
