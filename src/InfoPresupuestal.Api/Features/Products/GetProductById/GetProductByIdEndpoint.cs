@@ -1,5 +1,6 @@
 using InfoPresupuestal.Api.Common.Abstractions;
 using InfoPresupuestal.Api.Common.Endpoints;
+using InfoPresupuestal.Api.Common.Security;
 
 namespace InfoPresupuestal.Api.Features.Products.GetProductById;
 
@@ -23,6 +24,7 @@ internal sealed class GetProductByIdEndpoint : IEndpoint
             .WithName(Name)
             .WithTags(ProductsApi.Tag)
             .Produces<GetProductByIdResponse>()
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequirePermission(Modulos.Productos, Accion.Ver);
     }
 }

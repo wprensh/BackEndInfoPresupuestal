@@ -4,7 +4,7 @@ using Microsoft.OpenApi.Models;
 
 namespace InfoPresupuestal.Api.Common.MultiTenancy;
 
-/// <summary>Documenta el header del tenant en los endpoints que lo exigen.</summary>
+/// <summary>Documenta el header opcional del superadministrador en los endpoints que dependen de tenant.</summary>
 internal sealed class TenantOpenApiTransformer(IOptions<MultiTenancyOptions> options) : IOpenApiOperationTransformer
 {
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
@@ -16,8 +16,8 @@ internal sealed class TenantOpenApiTransformer(IOptions<MultiTenancyOptions> opt
             {
                 Name = options.Value.HeaderName,
                 In = ParameterLocation.Header,
-                Required = true,
-                Description = "Id del tenant.",
+                Required = false,
+                Description = "Solo superadministrador: empresa sobre la que actúa. Los demás usuarios usan la empresa de su token.",
                 Schema = new OpenApiSchema { Type = "string" },
             });
         }

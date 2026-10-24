@@ -1,5 +1,6 @@
 using InfoPresupuestal.Api.Common.Abstractions;
 using InfoPresupuestal.Api.Common.Endpoints;
+using InfoPresupuestal.Api.Common.Security;
 using InfoPresupuestal.Api.Common.Validation;
 using InfoPresupuestal.Api.Features.Products.GetProductById;
 
@@ -24,6 +25,7 @@ internal sealed class CreateProductEndpoint : IEndpoint
             .WithTags(ProductsApi.Tag)
             .WithRequestValidation<CreateProductCommand>()
             .Produces<CreateProductResponse>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RequirePermission(Modulos.Productos, Accion.Insertar);
     }
 }

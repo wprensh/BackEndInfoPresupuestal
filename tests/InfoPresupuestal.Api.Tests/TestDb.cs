@@ -13,7 +13,12 @@ internal static class TestDb
     {
         var tenant = new TenantContext();
         tenant.SetTenant(tenantId);
+        return Create(tenant, databaseName);
+    }
 
+    /// <summary>Contexto con un <see cref="TenantContext"/> que la prueba controla (por ejemplo, sin tenant para el login).</summary>
+    public static AppDbContext Create(TenantContext tenant, string? databaseName = null)
+    {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName ?? Guid.NewGuid().ToString())
             .AddInterceptors(new TenantSaveChangesInterceptor(tenant))

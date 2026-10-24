@@ -11,7 +11,6 @@ public static class MultiTenancyExtensions
 
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
-        services.AddSingleton<ITenantStore, ConfigurationTenantStore>();
         services.AddScoped<TenantSaveChangesInterceptor>();
 
         return services;

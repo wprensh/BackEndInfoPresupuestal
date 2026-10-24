@@ -1,11 +1,62 @@
 @api = http://localhost:5080
-@tenant = acme
+
+### Iniciar sesión (usuarios de la siembra de Development, contraseña Seed:Password)
+# @name login
+POST {{api}}/api/auth/login
+Content-Type: application/json
+
+{
+  "empresa": "demo",
+  "email": "admin@demo.local",
+  "password": "Admin123*"
+}
+
+@token = {{login.response.body.$.token}}
+
+### Sesión actual y permisos
+GET {{api}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Insumos con su precio vigente
+GET {{api}}/api/mantenimiento/insumos?search=tubo&pageSize=10
+Authorization: Bearer {{token}}
+
+### Crear insumo (el código MAT-NNNN se asigna solo)
+# @name insumo
+POST {{api}}/api/mantenimiento/insumos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tipoInsumoId": 1,
+  "clasificacionId": null,
+  "unidadMedidaId": 1,
+  "descripcion": "Insumo de prueba"
+}
+
+### Agregar un precio al historial
+POST {{api}}/api/mantenimiento/insumos/{{insumo.response.body.$.id}}/precios
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "valorUnitario": 12500,
+  "fechaVigencia": "2026-10-24"
+}
+
+### Roles y módulos asignables
+GET {{api}}/api/admin/roles
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/api/admin/modulos
+Authorization: Bearer {{token}}
 
 ### Crear producto
 # @name create
 POST {{api}}/api/products
 Content-Type: application/json
-X-Tenant-Id: {{tenant}}
+Authorization: Bearer {{token}}
 
 {
   "name": "Laptop",
@@ -16,8 +67,24 @@ X-Tenant-Id: {{tenant}}
 
 ### Obtener producto por id (la segunda llamada sale de Redis)
 GET {{api}}/api/products/{{create.response.body.$.id}}
-X-Tenant-Id: {{tenant}}
+Authorization: Bearer {{token}}
 
-### El mismo producto desde otro tenant devuelve 404
-GET {{api}}/api/products/{{create.response.body.$.id}}
-X-Tenant-Id: demo
+### Superadministrador: empresas de la plataforma
+# @name sa
+POST {{api}}/api/auth/login
+Content-Type: application/json
+
+{
+  "empresa": "sistema",
+  "email": "superadmin@infopresupuestal.local",
+  "password": "Admin123*"
+}
+
+###
+GET {{api}}/api/admin/empresas
+Authorization: Bearer {{sa.response.body.$.token}}
+
+### El superadministrador actúa sobre otra empresa con X-Tenant-Id
+GET {{api}}/api/admin/usuarios
+Authorization: Bearer {{sa.response.body.$.token}}
+X-Tenant-Id: acme
