@@ -47,6 +47,11 @@ app.UseRateLimiter();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+// En Development siempre; en otros entornos solo con Database:MigrateOnStartup=true (p. ej. Render).
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
     await app.MigrateAndSeedAsync();
 }
 

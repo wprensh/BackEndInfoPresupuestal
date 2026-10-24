@@ -206,3 +206,17 @@ GetProductByIdEndpoint
 ## Base de datos de insumos
 
 `database/` contiene el modelo PostgreSQL del catálogo de insumos (materiales, equipo y mano de obra) con su historial de precios, cargado desde el Excel de presupuestos. Está en los esquemas `presupuesto` y `carga`, separado de las tablas que maneja EF Core. Ver [database/README.md](database/README.md).
+
+## Despliegue (Render + Neon)
+
+La API se publica en Render como servicio **Docker** con el `Dockerfile` de la raíz (escucha en el puerto 8080, `ASPNETCORE_ENVIRONMENT=Production`). Variables de entorno:
+
+| Variable | Valor |
+|---|---|
+| `ConnectionStrings__Postgres` | Cadena Npgsql de Neon, p. ej. `Host=<host>-pooler...neon.tech;Database=neondb;Username=neondb_owner;Password=...;SSL Mode=Require` |
+| `Jwt__SigningKey` | Clave aleatoria de 32+ caracteres |
+| `Database__MigrateOnStartup` | `true`: aplica las migraciones EF (esquema `seguridad`) y la siembra al arrancar |
+| `Seed__Enabled`, `Seed__Password`, `Seed__Empresas__0__*` | Siembra inicial (solo si no hay empresas) |
+| `Cors__Origins__0`, `Cors__Origins__1` | Orígenes del frontend (GitHub Pages / Render) |
+
+Sin `ConnectionStrings__Redis` la caché usa memoria del proceso. Las tablas de `presupuesto` se cargan con `database/instalar.sql` (ver `database/README.md`).

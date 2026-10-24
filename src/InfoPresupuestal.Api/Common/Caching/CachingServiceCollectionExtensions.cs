@@ -6,14 +6,21 @@ public static class CachingServiceCollectionExtensions
 {
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Redis")
-            ?? throw new InvalidOperationException("Falta la cadena de conexión 'Redis'.");
+        var connectionString = configuration.GetConnectionString("Redis");
 
-        services.AddStackExchangeRedisCache(options =>
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
-            options.Configuration = connectionString;
-            options.InstanceName = "infopresupuestal:";
-        });
+            // Sin Redis (p. ej. Render free): caché en memoria del proceso.
+            services.AddDistributedMemoryCache();
+        }
+        else
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = connectionString;
+                options.InstanceName = "infopresupuestal:";
+            });
+        }
 
         // Los slices reciben ICacheService ya aislado por tenant.
         services.AddSingleton<DistributedCacheService>();
