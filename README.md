@@ -155,6 +155,19 @@ Un tenant que necesite base propia se resuelve con una cadena de conexión por t
 
 - **Login**: `POST /api/auth/login`, máximo 10 intentos por minuto por IP, y el mismo error 401 para empresa, correo o contraseña incorrectos.
 
+## APU y presupuestos
+
+Tablas en `database/scripts/05_apu_presupuesto.sql` (ver `database/README.md`). Módulos de permiso `apu` y `presupuestos`; al arrancar en Development, los roles de sistema de las empresas existentes los reciben (Administrador completo, Consulta solo ver).
+
+| Endpoint | Qué hace |
+|---|---|
+| `GET/POST /api/apus`, `GET/PUT/DELETE /api/apus/{id}` | APU completo (encabezado + materiales, equipo y mano de obra). Código `APU-NNNN` automático. Un APU usado en presupuestos no se borra: se desactiva. |
+| `POST /api/apus/{id}/duplicar` | Copia para ajustar sin tocar el original. |
+| `GET/POST /api/presupuestos`, `GET/PUT/DELETE /api/presupuestos/{id}` | Presupuesto con capítulos e ítems. Un ítem con `apuId` toma del APU descripción, unidad y costo; los ítems se numeran 1.1, 1.2, 2.1 según su orden. Responde subtotales, participación por capítulo, AIU, IVA sobre utilidad, total y anticipo. |
+| `PUT /api/presupuestos/{id}/estado` | BORRADOR, APROBADO o ANULADO. Solo un borrador se edita; uno aprobado no se borra. |
+| `POST /api/presupuestos/{id}/recalcular` | Trae a los ítems el costo actual de sus APU (`itemsDesactualizados` dice cuántos cambiaron). |
+| `POST /api/presupuestos/{id}/duplicar` | Copia como borrador nuevo. |
+
 ## Mantenimiento de tablas
 
 CRUD con búsqueda y paginación (`?page=1&pageSize=20&search=texto`) sobre el esquema `presupuesto`:

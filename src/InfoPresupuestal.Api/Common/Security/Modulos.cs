@@ -46,6 +46,8 @@ public static class Modulos
     public const string Insumos = "insumos";
     public const string PreciosInsumo = "precios-insumo";
     public const string Productos = "productos";
+    public const string Apu = "apu";
+    public const string Presupuestos = "presupuestos";
 
     public static readonly IReadOnlyList<ModuloDefinicion> Todos =
     [
@@ -57,6 +59,8 @@ public static class Modulos
         new(TiposInsumo, "Tipos de insumo", "Mantenimiento", AlcanceModulo.Global),
         new(Insumos, "Insumos", "Mantenimiento", AlcanceModulo.Tenant),
         new(PreciosInsumo, "Precios de insumos", "Mantenimiento", AlcanceModulo.Tenant),
+        new(Apu, "Análisis de precios unitarios", "Presupuestos", AlcanceModulo.Tenant),
+        new(Presupuestos, "Presupuestos de obra", "Presupuestos", AlcanceModulo.Tenant),
         new(Productos, "Productos", "Operación", AlcanceModulo.Tenant),
     ];
 
