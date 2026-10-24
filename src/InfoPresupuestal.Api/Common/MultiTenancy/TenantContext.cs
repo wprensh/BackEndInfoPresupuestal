@@ -21,4 +21,22 @@ public sealed class TenantContext : ITenantContext
 
         _tenantId = tenantId;
     }
+
+    /// <summary>
+    /// Cambia de tenant temporalmente y lo restaura al liberar el resultado. Solo para procesos de
+    /// plataforma explícitos (crear una empresa, sembrar datos), nunca para atender una solicitud normal.
+    /// </summary>
+    public IDisposable Use(string tenantId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+
+        var previous = _tenantId;
+        _tenantId = tenantId;
+        return new Restore(this, previous);
+    }
+
+    private sealed class Restore(TenantContext context, string? previous) : IDisposable
+    {
+        public void Dispose() => context._tenantId = previous;
+    }
 }

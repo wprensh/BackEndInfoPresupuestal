@@ -12,6 +12,8 @@ public static class ResultExtensions
             ErrorType.Validation => StatusCodes.Status400BadRequest,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
+            ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError,
         };
 
@@ -20,4 +22,13 @@ public static class ResultExtensions
             title: error.Code,
             detail: error.Description);
     }
+
+    public static IResult ToOk<T>(this Result<T> result) =>
+        result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+
+    public static IResult ToNoContent<T>(this Result<T> result) =>
+        result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+
+    public static IResult ToHttp<T>(this Result<T> result, Func<T, IResult> onSuccess) =>
+        result.IsSuccess ? onSuccess(result.Value) : result.Error.ToProblem();
 }

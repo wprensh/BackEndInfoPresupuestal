@@ -13,8 +13,18 @@ dotnet test
 
 - OpenAPI en `http://localhost:5080/openapi/v1.json` (solo Development).
 - `src/InfoPresupuestal.Api/InfoPresupuestal.Api.http` tiene solicitudes de ejemplo.
-- Toda solicitud a `/api/*` lleva el header `X-Tenant-Id`. En Development existen los tenants `demo` y `acme` (`MultiTenancy:Tenants` en `appsettings.Development.json`).
-- Cadenas de conexión: `ConnectionStrings:Postgres` y `ConnectionStrings:Redis`. Fuera de Development van por variables de entorno (`ConnectionStrings__Postgres`) o user-secrets, nunca en `appsettings.json`.
+- Antes de arrancar, instala el catálogo de insumos con `database/instalar.sql` (ver [database/README.md](database/README.md)): el mantenimiento de tablas trabaja sobre el esquema `presupuesto`.
+- Toda solicitud a `/api/*`, salvo el login, lleva `Authorization: Bearer <token>` de `POST /api/auth/login`. La empresa (tenant) sale del token.
+- En Development, al arrancar se aplican las migraciones y, si no hay empresas, se siembran (`Seed` en `appsettings.Development.json`, contraseña `Seed:Password`):
+
+  | Empresa | Usuario | Rol |
+  |---|---|---|
+  | `sistema` | `superadmin@infopresupuestal.local` | Superadministrador de la plataforma |
+  | `demo` | `admin@demo.local` | Administrador |
+  | `acme` | `admin@acme.local` | Administrador |
+
+- Cadenas de conexión: `ConnectionStrings:Postgres` y `ConnectionStrings:Redis`. Fuera de Development van por variables de entorno (`ConnectionStrings__Postgres`) o user-secrets, nunca en `appsettings.json`. Lo mismo para `Jwt__SigningKey` (32 caracteres o más): sin ella la API no arranca.
+- CORS: orígenes permitidos en `Cors:Origins`.
 - Nueva migración: `dotnet ef migrations add <Nombre> -p src/InfoPresupuestal.Api -o Common/Persistence/Migrations`.
 
 ## Arquitectura
@@ -35,11 +45,16 @@ BackEndInfoPresupuestal.sln
 │   │   │   ├── DistributedCacheService.cs   # IDistributedCache + System.Text.Json
 │   │   │   ├── CachedQueryHandler.cs        # decorador cache-aside para ICachedQuery
 │   │   │   └── CachingServiceCollectionExtensions.cs   # AddStackExchangeRedisCache
+│   │   ├── Security/                        # JWT, permisos por módulo y acción, políticas
+│   │   │   ├── Modulos.cs                   # catálogo de módulos y acciones Ver/Insertar/Editar/Eliminar
+│   │   │   ├── PermissionEvaluator.cs       # única regla de autorización
+│   │   │   ├── PermissionAuthorization.cs   # .RequirePermission(modulo, accion) en cada endpoint
+│   │   │   └── TokenService.cs              # emite el JWT con tenant, rol y permisos
 │   │   ├── MultiTenancy/
 │   │   │   ├── ITenantContext.cs / TenantContext.cs   # tenant de la solicitud (scoped)
 │   │   │   ├── ITenantEntity.cs             # marca entidades con TenantId
-│   │   │   ├── TenantResolutionFilter.cs    # lee X-Tenant-Id y lo valida contra ITenantStore
-│   │   │   ├── ITenantStore.cs / ConfigurationTenantStore.cs   # catálogo de tenants (hoy en configuración)
+│   │   │   ├── TenantResolutionFilter.cs    # toma el tenant del JWT y lo valida contra ITenantStore
+│   │   │   ├── ITenantStore.cs              # empresas activas (lo implementa Administracion/Empresas)
 │   │   │   ├── TenantSaveChangesInterceptor.cs   # asigna TenantId al insertar, bloquea escrituras cruzadas
 │   │   │   ├── TenantCacheService.cs        # antepone tenant:{id}: a cada clave de caché
 │   │   │   └── TenantOpenApiTransformer.cs  # documenta el header en OpenAPI
@@ -51,6 +66,16 @@ BackEndInfoPresupuestal.sln
 │   │   ├── Validation/ValidationFilter.cs   # filtro de endpoint con FluentValidation
 │   │   └── Errors/GlobalExceptionHandler.cs
 │   └── Features/
+│       ├── Administracion/              # esquema seguridad (migración EF Core)
+│       │   ├── Autenticacion/           # Login (público, con límite de intentos) y Me
+│       │   ├── Empresas/                # tenants: alta con roles y administrador, siembra
+│       │   ├── Roles/                   # roles por empresa con su matriz de permisos
+│       │   └── Usuarios/                # usuarios por empresa, contraseñas con hash PBKDF2
+│       ├── Mantenimiento/               # esquema presupuesto (tablas de database/, sin migración)
+│       │   ├── UnidadesMedida/ · TiposInsumo/   # catálogos globales
+│       │   ├── Clasificaciones/
+│       │   ├── Insumos/                 # código MAT-0001 automático, precio vigente
+│       │   └── PreciosInsumo/           # historial de precios
 │       └── Products/
 │           ├── Product.cs                   # entidad (fábrica Create, setters privados)
 │           ├── ProductConfiguration.cs      # mapeo EF Core de la tabla products
@@ -92,25 +117,57 @@ BackEndInfoPresupuestal.sln
     - `ICacheService` ya llega aislado por tenant;
     - si algo intenta consultar sin tenant resuelto, `TenantContext` lanza una excepción en lugar de devolver datos.
 13. **Las restricciones únicas incluyen el tenant** (por ejemplo `(tenant_id, name)` en `products`).
-14. **`IgnoreQueryFilters()` solo en código administrativo explícito**, nunca en un slice de tenant.
+14. **`IgnoreQueryFilters()` solo en código administrativo explícito**, nunca en un slice de tenant (hoy: `Me` y revisar el uso de un catálogo global antes de borrarlo).
+15. **Cada endpoint declara su permiso** con `.RequirePermission(Modulos.X, Accion.Y)`. Los endpoints quedan en uno de tres grupos según su interfaz: `IEndpoint` (autenticado + tenant), `IPlatformEndpoint` (autenticado, sin tenant) e `IPublicEndpoint` (anónimo, solo el login).
+16. **En los slices de Administración y Mantenimiento un archivo es un caso de uso**: solicitud, validador, handler y endpoint juntos. Products conserva un archivo por clase como ejemplo de la forma extendida.
 
 ## Multi-tenant
 
-Modelo: **una base compartida con columna `tenant_id`** en cada tabla de negocio.
+Modelo: **una base compartida con columna `tenant_id`** en cada tabla de negocio. Cada tenant es una **empresa** (`seguridad.empresa`).
 
 ```
-Solicitud con X-Tenant-Id: acme
-  → TenantResolutionFilter: formato [a-z0-9-], existe en ITenantStore → TenantContext = acme
-      (sin header → 400 Tenant.Missing · desconocido → 404 Tenant.NotFound)
+Solicitud con Authorization: Bearer <jwt de acme>
+  → JwtBearer valida firma y vigencia (401 si no)
+  → TenantResolutionFilter: claim tenant = acme, empresa activa → TenantContext = acme
+      (sin claim → 401 Tenant.Missing · empresa inactiva → 403 Tenant.Inactive)
+      el superadministrador puede enviar X-Tenant-Id para actuar sobre otra empresa
+  → política perm:modulo:accion (403 si el rol no tiene el permiso)
   → ValidationFilter → Handler
       ├─ EF Core: WHERE tenant_id = 'acme' en cada consulta; INSERT con tenant_id = 'acme'
       └─ Redis: infopresupuestal:tenant:acme:products:{id}
 ```
 
-Siguientes pasos previstos:
-- Con autenticación, `TenantResolutionFilter` toma el tenant de un claim del JWT y no del header.
-- El catálogo de tenants puede pasar de configuración a una tabla implementando otro `ITenantStore`.
-- Un tenant que necesite base propia se resuelve con una cadena de conexión por tenant sin cambiar los slices.
+Un tenant que necesite base propia se resuelve con una cadena de conexión por tenant sin cambiar los slices.
+
+## Administración y control de acceso
+
+- **Empresas** (`/api/admin/empresas`, solo superadministrador): crear una empresa crea en la misma transacción sus roles `Administrador` y `Consulta` y su primer usuario administrador. Eliminar una empresa la **desactiva**: sus usuarios dejan de poder entrar y sus tokens dejan de servir.
+- **Usuarios** (`/api/admin/usuarios`): inician sesión con empresa + correo + contraseña. El mismo correo puede existir en dos empresas. Las contraseñas se guardan con el hash PBKDF2 de ASP.NET Core Identity (mínimo 8 caracteres con mayúscula, minúscula y número). Un usuario no puede desactivarse, cambiar su propio rol ni eliminarse.
+- **Roles** (`/api/admin/roles`, `/api/admin/modulos`): cada rol tiene, por módulo, las acciones **Ver, Insertar, Editar y Eliminar**. Insertar, Editar o Eliminar implican Ver. Los roles del sistema no se editan ni se eliminan; un rol con usuarios no se elimina.
+- **Permisos en el token**: el login devuelve el JWT con los permisos del rol (`perm: insumos:editar`). Un cambio de rol aplica en el siguiente inicio de sesión (el token dura `Jwt:ExpirationMinutes`).
+- **Alcance de los módulos** (`Common/Security/Modulos.cs`):
+
+  | Alcance | Módulos | Roles de empresa |
+  |---|---|---|
+  | Tenant | usuarios, roles, clasificaciones, insumos, precios-insumo, productos | Ver, Insertar, Editar, Eliminar |
+  | Global | unidades-medida, tipos-insumo | Solo Ver; los cambia el superadministrador porque los comparten todas las empresas |
+  | Plataforma | empresas | Ninguna; solo el superadministrador |
+
+- **Login**: `POST /api/auth/login`, máximo 10 intentos por minuto por IP, y el mismo error 401 para empresa, correo o contraseña incorrectos.
+
+## Mantenimiento de tablas
+
+CRUD con búsqueda y paginación (`?page=1&pageSize=20&search=texto`) sobre el esquema `presupuesto`:
+
+| Ruta | Tabla | Notas |
+|---|---|---|
+| `/api/mantenimiento/unidades-medida` | `unidad_medida` | Global. No se borra si la usa algún insumo de cualquier empresa. |
+| `/api/mantenimiento/tipos-insumo` | `tipo_insumo` | Global. El prefijo (MAT) no cambia después de creado. |
+| `/api/mantenimiento/clasificaciones` | `clasificacion` | Por empresa. No se borra si tiene insumos; se puede desactivar. |
+| `/api/mantenimiento/insumos` | `insumo` | Por empresa. Filtros `tipoInsumoId`, `clasificacionId`, `activo`. Devuelve el precio vigente. El código se asigna solo (MAT-3695) y el tipo no cambia. Eliminar borra también su historial. |
+| `/api/mantenimiento/insumos/{id}/precios` | `insumo_precio` | Una fila por fecha de vigencia; moneda COP por defecto. |
+
+Estas tablas las crean los scripts de `database/`, por eso EF Core las mapea con `ExcludeFromMigrations()`. Las tablas de `seguridad` sí van por migraciones.
 
 ### Flujo de `GET /api/products/{id}`
 

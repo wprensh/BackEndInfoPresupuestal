@@ -16,13 +16,25 @@ public static class EndpointExtensions
         return services;
     }
 
-    /// <summary>Mapea todos los slices en un grupo que exige tenant.</summary>
+    /// <summary>
+    /// Mapea los slices en tres grupos:
+    /// públicos (sin autenticación), de plataforma (autenticados, sin tenant) y el resto
+    /// (autenticados y con tenant resuelto). Un endpoint nuevo queda protegido por defecto.
+    /// </summary>
     public static IApplicationBuilder MapEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup(string.Empty).RequireTenant();
+        var publicGroup = app.MapGroup(string.Empty).AllowAnonymous();
+        var platformGroup = app.MapGroup(string.Empty).RequireAuthorization();
+        var tenantGroup = app.MapGroup(string.Empty).RequireAuthorization().RequireTenant();
 
         foreach (var endpoint in app.Services.GetRequiredService<IEnumerable<IEndpoint>>())
         {
+            var group = endpoint switch
+            {
+                IPublicEndpoint => publicGroup,
+                IPlatformEndpoint => platformGroup,
+                _ => tenantGroup,
+            };
             endpoint.MapEndpoint(group);
         }
 

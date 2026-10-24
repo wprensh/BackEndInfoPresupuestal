@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using InfoPresupuestal.Api.Common.MultiTenancy;
+using InfoPresupuestal.Api.Common.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
@@ -10,41 +12,69 @@ public sealed class TenantResolutionFilterTests
     private readonly TenantContext _tenant = new();
     private readonly TenantResolutionFilter _filter;
 
-    public TenantResolutionFilterTests()
+    public TenantResolutionFilterTests() =>
+        _filter = new TenantResolutionFilter(_tenant, new FakeTenantStore("acme", "demo", "sistema"), Options.Create(new MultiTenancyOptions()));
+
+    [Fact]
+    public async Task Uses_the_tenant_claim_of_the_token()
     {
-        var options = new MultiTenancyOptions { Tenants = [new TenantDefinition { Id = "acme" }] };
-        _filter = new TenantResolutionFilter(
-            _tenant,
-            new ConfigurationTenantStore(new StaticOptionsMonitor(options)),
-            Options.Create(options));
+        var (_, nextCalled) = await InvokeAsync(User("acme"));
+
+        Assert.True(nextCalled);
+        Assert.Equal("acme", _tenant.TenantId);
+    }
+
+    [Fact]
+    public async Task A_normal_user_cannot_switch_tenant_with_the_header()
+    {
+        var (_, nextCalled) = await InvokeAsync(User("acme"), header: "demo");
+
+        Assert.True(nextCalled);
+        Assert.Equal("acme", _tenant.TenantId);
+    }
+
+    [Fact]
+    public async Task The_superadmin_can_act_on_another_tenant_with_the_header()
+    {
+        var (_, nextCalled) = await InvokeAsync(User("sistema", superAdmin: true), header: "demo");
+
+        Assert.True(nextCalled);
+        Assert.Equal("demo", _tenant.TenantId);
     }
 
     [Theory]
-    [InlineData(null, StatusCodes.Status400BadRequest)]
-    [InlineData("otro", StatusCodes.Status404NotFound)]
-    [InlineData("ACME", StatusCodes.Status404NotFound)]
-    [InlineData("acme:x", StatusCodes.Status404NotFound)]
-    public async Task Rejects_missing_or_unknown_tenant(string? header, int expectedStatus)
+    [InlineData(null, StatusCodes.Status401Unauthorized)]
+    [InlineData("inactiva", StatusCodes.Status403Forbidden)]
+    [InlineData("ACME", StatusCodes.Status403Forbidden)]
+    [InlineData("acme:x", StatusCodes.Status403Forbidden)]
+    public async Task Rejects_missing_unknown_or_inactive_tenant(string? tenantClaim, int expectedStatus)
     {
-        var (result, nextCalled) = await InvokeAsync(header);
+        var (result, nextCalled) = await InvokeAsync(User(tenantClaim));
 
         Assert.False(nextCalled);
         Assert.Equal(expectedStatus, Assert.IsType<ProblemHttpResult>(result).StatusCode);
         Assert.False(_tenant.HasTenant);
     }
 
-    [Fact]
-    public async Task Sets_tenant_and_continues_when_valid()
+    private static ClaimsPrincipal User(string? tenant, bool superAdmin = false)
     {
-        var (_, nextCalled) = await InvokeAsync("acme");
+        var claims = new List<Claim> { new(AppClaims.UserId, Guid.NewGuid().ToString()) };
+        if (tenant is not null)
+        {
+            claims.Add(new Claim(AppClaims.Tenant, tenant));
+        }
 
-        Assert.True(nextCalled);
-        Assert.Equal("acme", _tenant.TenantId);
+        if (superAdmin)
+        {
+            claims.Add(new Claim(AppClaims.SuperAdmin, "true"));
+        }
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
     }
 
-    private async Task<(object? Result, bool NextCalled)> InvokeAsync(string? header)
+    private async Task<(object? Result, bool NextCalled)> InvokeAsync(ClaimsPrincipal user, string? header = null)
     {
-        var http = new DefaultHttpContext();
+        var http = new DefaultHttpContext { User = user };
         if (header is not null)
         {
             http.Request.Headers["X-Tenant-Id"] = header;
@@ -60,12 +90,8 @@ public sealed class TenantResolutionFilterTests
         return (result, nextCalled);
     }
 
-    private sealed class StaticOptionsMonitor(MultiTenancyOptions value) : IOptionsMonitor<MultiTenancyOptions>
+    private sealed class FakeTenantStore(params string[] activos) : ITenantStore
     {
-        public MultiTenancyOptions CurrentValue => value;
-
-        public MultiTenancyOptions Get(string? name) => value;
-
-        public IDisposable? OnChange(Action<MultiTenancyOptions, string?> listener) => null;
+        public Task<bool> ExistsAsync(string tenantId, CancellationToken cancellationToken) => Task.FromResult(activos.Contains(tenantId));
     }
 }
