@@ -23,3 +23,7 @@ dotnet_diagnostic.CA1515.severity = none # los tipos de contrato HTTP son públi
 [tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none # nombres de prueba con guiones bajos
 dotnet_diagnostic.CA2007.severity = none
+
+# Migraciones generadas por dotnet-ef
+[src/**/Migrations/*.cs]
+generated_code = true

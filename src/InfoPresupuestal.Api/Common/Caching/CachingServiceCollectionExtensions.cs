@@ -1,3 +1,5 @@
+using InfoPresupuestal.Api.Common.MultiTenancy;
+
 namespace InfoPresupuestal.Api.Common.Caching;
 
 public static class CachingServiceCollectionExtensions
@@ -13,7 +15,12 @@ public static class CachingServiceCollectionExtensions
             options.InstanceName = "infopresupuestal:";
         });
 
-        services.AddSingleton<ICacheService, DistributedCacheService>();
+        // Los slices reciben ICacheService ya aislado por tenant.
+        services.AddSingleton<DistributedCacheService>();
+        services.AddScoped<ICacheService>(sp => new TenantCacheService(
+            sp.GetRequiredService<DistributedCacheService>(),
+            sp.GetRequiredService<ITenantContext>()));
+
         return services;
     }
 }
