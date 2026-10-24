@@ -132,3 +132,7 @@ GetProductByIdEndpoint
 - **Sin MediatR**: desde la v13 tiene licencia comercial, y para este tamaño basta con inyectar el handler directamente.
 - **SDK**: `global.json` pide .NET 9 y permite un SDK más nuevo (`rollForward: latestMajor`); el proyecto apunta a `net9.0`.
 - **Ids `Guid.CreateVersion7`**: ordenables por fecha, buenos para índices en PostgreSQL.
+
+## Base de datos de insumos
+
+`database/` contiene el modelo PostgreSQL del catálogo de insumos (materiales, equipo y mano de obra) con su historial de precios, cargado desde el Excel de presupuestos. Está en los esquemas `presupuesto` y `carga`, separado de las tablas que maneja EF Core. Ver [database/README.md](database/README.md).
