@@ -53,6 +53,17 @@ public sealed class Rol : ITenantEntity
         _permisos.AddRange(permisos);
     }
 
+    /// <summary>
+    /// Agrega los módulos que el rol aún no tiene (módulos nuevos de la aplicación). No toca los existentes.
+    /// Devuelve cuántos se agregaron.
+    /// </summary>
+    public int CompletarPermisos(IEnumerable<RolPermiso> requeridos)
+    {
+        var faltantes = requeridos.Where(r => _permisos.All(p => p.Modulo != r.Modulo)).ToList();
+        _permisos.AddRange(faltantes);
+        return faltantes.Count;
+    }
+
     /// <summary>Permisos en formato <c>modulo:accion</c>, tal como viajan en el JWT.</summary>
     public IEnumerable<string> PermisosEfectivos() => _permisos.SelectMany(p => p.Acciones().Select(a => Modulos.Permiso(p.Modulo, a)));
 

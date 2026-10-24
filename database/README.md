@@ -18,6 +18,7 @@ psql -h localhost -U postgres -d infopresupuestal -v tenant=acme -f database/ins
 | `02_catalogos.sql` | Carga los tipos de insumo y las 16 unidades de medida. |
 | `03_carga_excel.sql` | Copia el Excel tal cual, como texto, a `carga.insumo_excel`. **Es un archivo generado.** |
 | `04_normalizar_insumos.sql` | Limpia los datos de `carga` y los pasa a `presupuesto` para el tenant. |
+| `05_apu_presupuesto.sql` | Crea las tablas de APU y presupuestos de obra (ver abajo). No carga datos. |
 
 Si actualizas el Excel, regenera el script 03 con `pip install xlrd && python database/herramientas/xls_a_sql.py "<ruta>.xls"` y vuelve a ejecutar `instalar.sql`.
 
@@ -75,6 +76,36 @@ erDiagram
 - **Dinero en `numeric(18,2)`** con moneda `COP` (pesos colombianos, confirmado por el usuario). La columna `moneda` permite cargar otras monedas más adelante.
 - **Búsqueda.** Un índice trigram (`pg_trgm`) sobre `descripcion` acelera `ILIKE '%tubo%'` y las búsquedas por similitud (`descripcion % 'tubo pvc 4'`).
 - **Staging separado.** El Excel se copia sin cambios a `carga`, y las reglas de limpieza viven en la vista `carga.v_insumo_normalizado`. Así cualquier dato se puede rastrear hasta su hoja y fila de origen.
+
+## APU y presupuestos de obra
+
+`05_apu_presupuesto.sql` (PostgreSQL 15 o superior) modela las hojas **APU's** y **PRESUPUESTO** de `FORMATO PRESUPUES-TENV3v3.xlsm`. Para agregarlo a una base que ya tiene el catálogo:
+
+```bash
+psql -h localhost -U postgres -d infopresupuestal -f database/scripts/05_apu_presupuesto.sql
+```
+
+Si la API se conecta con un usuario distinto del dueño de las tablas, dale permisos:
+`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA presupuesto TO <usuario>; GRANT USAGE ON ALL SEQUENCES IN SCHEMA presupuesto TO <usuario>;`
+
+```mermaid
+erDiagram
+    apu ||--o{ apu_detalle : "materiales, equipo, mano de obra"
+    insumo |o--o{ apu_detalle : "origen"
+    presupuesto ||--o{ presupuesto_capitulo : tiene
+    presupuesto_capitulo ||--o{ presupuesto_item : tiene
+    apu |o--o{ presupuesto_item : "se reutiliza en"
+```
+
+| Tabla | Qué guarda | Reglas principales |
+|---|---|---|
+| `apu` | Actividad con su unidad (REPLANTEO por M2). Código `APU-0001` por empresa. | Descripción + unidad únicas por empresa. |
+| `apu_detalle` | Líneas de las tres secciones en una tabla, con `tipo_insumo_id`. | `valor_parcial` es columna **generada** con la fórmula del Excel según el tipo. CHECK por columna (desperdicio 0–1, factor 1–3, rendimiento > 0). Si se borra el insumo de origen, la línea se conserva. |
+| `presupuesto` | Obra, cliente, fecha, propuesta, estado (BORRADOR, APROBADO, ANULADO), % AIU, IVA sobre utilidad, duración y anticipo. Código `PRE-0001`. | Porcentajes como fracción entre 0 y 1. |
+| `presupuesto_capitulo` | Capítulos numerados 1, 2, 3... | Número único dentro del presupuesto. |
+| `presupuesto_item` | Ítem con consecutivo `capítulo.número` (1.1, 1.2), descripción, unidad, cantidad y valor unitario. | Guarda una **copia** del costo del APU al agregarlo: un presupuesto emitido no cambia solo si el APU cambia. `valor_total` es columna generada. Un APU usado no se puede borrar (`ON DELETE RESTRICT`). |
+
+Todas las tablas llevan `tenant_id` y FK compuestas `(tenant_id, id)`, así una fila nunca apunta a datos de otra empresa. Las vistas `v_apu_costo` y `v_presupuesto_resumen` dan los totales (costo directo, AIU, IVA y valor total) con las mismas fórmulas que la API, para reportes en SQL.
 
 ## Resultado de la carga
 

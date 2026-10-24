@@ -88,3 +88,43 @@ Authorization: Bearer {{sa.response.body.$.token}}
 GET {{api}}/api/admin/usuarios
 Authorization: Bearer {{sa.response.body.$.token}}
 X-Tenant-Id: acme
+
+### APU: listar con su costo directo
+GET {{api}}/api/apus?search=replanteo
+Authorization: Bearer {{login.response.body.$.token}}
+
+### APU: crear (desperdicio como fracción, factor prestacional como multiplicador)
+# @name apu
+POST {{api}}/api/apus
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "descripcion": "REPLANTEO",
+  "unidadMedidaId": 3,
+  "materiales": [{ "descripcion": "MINERAL ROJO", "unidadMedidaId": 7, "cantidad": 23, "desperdicio": 0.05, "precioUnitario": 4700 }],
+  "manoObra": [{ "descripcion": "MANO OBRA OFICIAL ALBANILERIA", "jornal": 42174.12, "factorPrestacional": 1.7, "rendimiento": 250 }],
+  "equipo": [{ "descripcion": "RETROEXCAVADORA JD-510", "unidadMedidaId": 11, "incidencia": 0.23, "precioUnitario": 88000 }]
+}
+
+### Presupuesto: ítems que reutilizan el APU (toman descripción, unidad y costo)
+# @name presupuesto
+POST {{api}}/api/presupuestos
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "nombreObra": "Casa campestre",
+  "cliente": "Cliente de prueba",
+  "anticipoPct": 0.12,
+  "capitulos": [
+    { "nombre": "Preliminares", "items": [{ "apuId": "{{apu.response.body.$.id}}", "cantidad": 1200 }] }
+  ]
+}
+
+### Presupuesto: aprobar (queda congelado)
+PUT {{api}}/api/presupuestos/{{presupuesto.response.body.$.id}}/estado
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{ "estado": "APROBADO" }
