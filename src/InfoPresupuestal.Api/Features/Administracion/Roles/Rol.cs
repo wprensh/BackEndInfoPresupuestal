@@ -8,6 +8,7 @@ public sealed class Rol : ITenantEntity
 {
     public const string Administrador = "Administrador";
     public const string Consulta = "Consulta";
+    public const string Proveedor = "Proveedor";
 
     private readonly List<RolPermiso> _permisos = [];
 
@@ -83,6 +84,23 @@ public sealed class Rol : ITenantEntity
         Modulos.Todos
             .Where(m => m.Alcance != AlcanceModulo.Plataforma)
             .Select(m => RolPermiso.Create(m.Codigo, ver: true, insertar: false, editar: false, eliminar: false));
+
+    /// <summary>
+    /// Rol Proveedor: mantiene el catálogo de la empresa (crea y edita insumos y sus precios, agrega
+    /// clasificaciones) sin eliminar nada ni ver APU, presupuestos o administración.
+    /// </summary>
+    public static IEnumerable<RolPermiso> PermisosProveedor() =>
+    [
+        RolPermiso.Create(Modulos.Insumos, ver: true, insertar: true, editar: true, eliminar: false),
+        RolPermiso.Create(Modulos.PreciosInsumo, ver: true, insertar: true, editar: true, eliminar: false),
+        RolPermiso.Create(Modulos.Clasificaciones, ver: true, insertar: true, editar: false, eliminar: false),
+        RolPermiso.Create(Modulos.UnidadesMedida, ver: true, insertar: false, editar: false, eliminar: false),
+        RolPermiso.Create(Modulos.TiposInsumo, ver: true, insertar: false, editar: false, eliminar: false),
+    ];
+
+    /// <summary>Crea el rol de sistema Proveedor (el tenant lo asigna el contexto activo).</summary>
+    public static Rol CrearProveedor(DateTimeOffset now) =>
+        Create(Proveedor, "Mantiene insumos y precios del catálogo.", PermisosProveedor(), now, esSistema: true);
 }
 
 /// <summary>Qué puede hacer un rol en un módulo.</summary>
