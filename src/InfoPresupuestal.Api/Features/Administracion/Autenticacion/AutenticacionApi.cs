@@ -21,9 +21,12 @@ internal static class AutenticacionApi
         usuario.EsSuperAdmin
             ? Modulos.Todos.SelectMany(m => Enum.GetValues<Accion>().Select(a => Modulos.Permiso(m.Codigo, a))).ToArray()
             : usuario.Rol?.PermisosEfectivos().ToArray() ?? [];
+
+    public static string TipoTexto(TipoEmpresa tipo) => tipo == TipoEmpresa.Proveedor ? "PROVEEDOR" : "CONSTRUCTORA";
 }
 
-public sealed record SesionUsuario(Guid Id, string Email, string Nombre, string Empresa, string RazonSocial, string Rol, bool EsSuperAdmin);
+/// <param name="TipoEmpresa">CONSTRUCTORA o PROVEEDOR: la interfaz muestra el menú que corresponde.</param>
+public sealed record SesionUsuario(Guid Id, string Email, string Nombre, string Empresa, string RazonSocial, string Rol, bool EsSuperAdmin, string TipoEmpresa);
 
 internal sealed class AutenticacionInstaller : IServiceInstaller
 {

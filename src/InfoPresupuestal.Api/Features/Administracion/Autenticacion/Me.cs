@@ -31,7 +31,7 @@ internal sealed class MeHandler(AppDbContext db) : IQueryHandler<MeQuery, MeResp
             return Error.Unauthorized("Auth.SesionInvalida", "La sesión ya no es válida.");
         }
 
-        var sesion = new SesionUsuario(usuario.Id, usuario.Email, usuario.Nombre, empresa.TenantId, empresa.RazonSocial, usuario.Rol?.Nombre ?? string.Empty, usuario.EsSuperAdmin);
+        var sesion = new SesionUsuario(usuario.Id, usuario.Email, usuario.Nombre, empresa.TenantId, empresa.RazonSocial, usuario.Rol?.Nombre ?? string.Empty, usuario.EsSuperAdmin, AutenticacionApi.TipoTexto(empresa.Tipo));
         return new MeResponse(sesion, AutenticacionApi.Permisos(usuario));
     }
 }
