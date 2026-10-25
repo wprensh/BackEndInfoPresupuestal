@@ -68,10 +68,9 @@ public sealed class Rol : ITenantEntity
     /// <summary>Permisos en formato <c>modulo:accion</c>, tal como viajan en el JWT.</summary>
     public IEnumerable<string> PermisosEfectivos() => _permisos.SelectMany(p => p.Acciones().Select(a => Modulos.Permiso(p.Modulo, a)));
 
-    /// <summary>Todos los permisos que un rol de tenant puede tener (rol Administrador).</summary>
-    public static IEnumerable<RolPermiso> PermisosCompletos() =>
-        Modulos.Todos
-            .Where(m => m.Alcance != AlcanceModulo.Plataforma)
+    /// <summary>Todos los permisos que un rol de una empresa de ese tipo puede tener (rol Administrador).</summary>
+    public static IEnumerable<RolPermiso> PermisosCompletos(TipoEmpresa tipo = TipoEmpresa.Constructora) =>
+        Modulos.ParaTipo(tipo)
             .Select(m => RolPermiso.Create(
                 m.Codigo,
                 ver: true,
@@ -79,10 +78,9 @@ public sealed class Rol : ITenantEntity
                 editar: m.PermiteEnRol(Accion.Editar),
                 eliminar: m.PermiteEnRol(Accion.Eliminar)));
 
-    /// <summary>Solo lectura de todos los módulos (rol Consulta).</summary>
-    public static IEnumerable<RolPermiso> PermisosSoloLectura() =>
-        Modulos.Todos
-            .Where(m => m.Alcance != AlcanceModulo.Plataforma)
+    /// <summary>Solo lectura de todos los módulos del tipo de empresa (rol Consulta).</summary>
+    public static IEnumerable<RolPermiso> PermisosSoloLectura(TipoEmpresa tipo = TipoEmpresa.Constructora) =>
+        Modulos.ParaTipo(tipo)
             .Select(m => RolPermiso.Create(m.Codigo, ver: true, insertar: false, editar: false, eliminar: false));
 
     /// <summary>

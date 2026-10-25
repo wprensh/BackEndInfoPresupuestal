@@ -18,6 +18,7 @@ SELECT set_config('app.tenant_id', :'tenant', false);
 \ir scripts/03_carga_excel.sql
 \ir scripts/04_normalizar_insumos.sql
 \ir scripts/05_apu_presupuesto.sql
+\ir scripts/06_proveedores.sql
 COMMIT;
 
 \echo 'Filas a revisar: SELECT motivo, count(*) FROM carga.v_observacion GROUP BY motivo;'

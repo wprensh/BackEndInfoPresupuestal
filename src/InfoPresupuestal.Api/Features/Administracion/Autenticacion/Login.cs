@@ -73,7 +73,7 @@ internal sealed class LoginHandler(
         var rol = usuario.Rol?.Nombre ?? string.Empty;
         var token = tokenService.Issue(new TokenSubject(usuario.Id, usuario.Email, usuario.Nombre, empresa.TenantId, rol, usuario.EsSuperAdmin, permisos));
 
-        var sesion = new SesionUsuario(usuario.Id, usuario.Email, usuario.Nombre, empresa.TenantId, empresa.RazonSocial, rol, usuario.EsSuperAdmin);
+        var sesion = new SesionUsuario(usuario.Id, usuario.Email, usuario.Nombre, empresa.TenantId, empresa.RazonSocial, rol, usuario.EsSuperAdmin, AutenticacionApi.TipoTexto(empresa.Tipo));
         return new LoginResponse(token.Token, token.ExpiresAt, sesion, permisos);
     }
 }

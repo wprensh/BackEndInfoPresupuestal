@@ -1,3 +1,4 @@
+using InfoPresupuestal.Api.Common.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,8 @@ internal sealed class EmpresaConfiguration : IEntityTypeConfiguration<Empresa>
         builder.Property(e => e.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(e => e.TenantId).HasColumnName("tenant_id").HasMaxLength(64).IsRequired();
         builder.Property(e => e.RazonSocial).HasColumnName("razon_social").HasMaxLength(RazonSocialMaxLength).IsRequired();
+        builder.Property(e => e.Tipo).HasColumnName("tipo").HasMaxLength(20)
+            .HasConversion(t => t.ToString().ToUpperInvariant(), v => Enum.Parse<TipoEmpresa>(v, true));
         builder.Property(e => e.Nit).HasColumnName("nit").HasMaxLength(20);
         builder.Property(e => e.Email).HasColumnName("email").HasMaxLength(200);
         builder.Property(e => e.Telefono).HasColumnName("telefono").HasMaxLength(30);

@@ -135,3 +135,19 @@ También se quitan los espacios sobrantes de las descripciones (602 filas los te
 - **Análisis de precios unitarios (APU) y presupuesto:** `actividad` → `apu_insumo` (insumo, rendimiento, desperdicio) y `presupuesto` → `capitulo` → `item`. Las FK incluirían el tenant, igual que aquí.
 - **Row Level Security** sobre `tenant_id` como segunda barrera, si la API fija `app.tenant_id` en cada conexión.
 - **Clasificar** los 491 materiales sin clasificación desde la aplicación.
+
+## Catálogo de proveedores
+
+`06_proveedores.sql` crea el catálogo propio de las empresas proveedoras (`seguridad.empresa.tipo = 'PROVEEDOR'`): sus productos y su lista de precios por ciudad, con o sin IVA. Para agregarlo a una base existente:
+
+```bash
+psql -h localhost -U postgres -d infopresupuestal -f database/scripts/06_proveedores.sql
+```
+
+Si la API usa otro usuario de base de datos, repite los `GRANT` de la sección anterior.
+
+| Tabla | Qué guarda | Reglas principales |
+|---|---|---|
+| `proveedor_producto` | Producto del proveedor: código propio (SKU), descripción, tipo de insumo, unidad, marca, categoría | Código único por proveedor |
+| `proveedor_precio` | Historial de precios por producto, ciudad y fecha de vigencia | `ciudad` NULL = nacional; `incluye_iva` + `iva_pct` (fracción); un precio por producto, ciudad y fecha |
+| `v_proveedor_precio_vigente` (vista) | Último precio de cada producto en cada ciudad, con valor sin IVA y con IVA | |

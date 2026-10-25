@@ -21,8 +21,18 @@ public enum AlcanceModulo
     Plataforma,
 }
 
-public sealed record ModuloDefinicion(string Codigo, string Nombre, string Grupo, AlcanceModulo Alcance)
+/// <summary>Clase de empresa: una constructora arma presupuestos; un proveedor publica su catálogo de precios.</summary>
+public enum TipoEmpresa
 {
+    Constructora,
+    Proveedor,
+}
+
+/// <param name="SoloPara">Clase de empresa a la que aplica el módulo; null = a todas.</param>
+public sealed record ModuloDefinicion(string Codigo, string Nombre, string Grupo, AlcanceModulo Alcance, TipoEmpresa? SoloPara = null)
+{
+    public bool AplicaA(TipoEmpresa tipo) => Alcance != AlcanceModulo.Plataforma && (SoloPara is null || SoloPara == tipo);
+
     public bool PermiteEnRol(Accion accion) => Alcance switch
     {
         AlcanceModulo.Tenant => true,
@@ -48,21 +58,28 @@ public static class Modulos
     public const string Productos = "productos";
     public const string Apu = "apu";
     public const string Presupuestos = "presupuestos";
+    public const string Proveedores = "proveedores";
+    public const string CatalogoProveedor = "catalogo-proveedor";
 
     public static readonly IReadOnlyList<ModuloDefinicion> Todos =
     [
         new(Empresas, "Empresas", "Administración", AlcanceModulo.Plataforma),
         new(Usuarios, "Usuarios", "Administración", AlcanceModulo.Tenant),
         new(Roles, "Roles y permisos", "Administración", AlcanceModulo.Tenant),
-        new(Clasificaciones, "Clasificaciones", "Mantenimiento", AlcanceModulo.Tenant),
+        new(Clasificaciones, "Clasificaciones", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(UnidadesMedida, "Unidades de medida", "Mantenimiento", AlcanceModulo.Global),
         new(TiposInsumo, "Tipos de insumo", "Mantenimiento", AlcanceModulo.Global),
-        new(Insumos, "Insumos", "Mantenimiento", AlcanceModulo.Tenant),
-        new(PreciosInsumo, "Precios de insumos", "Mantenimiento", AlcanceModulo.Tenant),
-        new(Apu, "Análisis de precios unitarios", "Presupuestos", AlcanceModulo.Tenant),
-        new(Presupuestos, "Presupuestos de obra", "Presupuestos", AlcanceModulo.Tenant),
-        new(Productos, "Productos", "Operación", AlcanceModulo.Tenant),
+        new(Insumos, "Insumos", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(PreciosInsumo, "Precios de insumos", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(Proveedores, "Proveedores", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(Apu, "Análisis de precios unitarios", "Presupuestos", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(Presupuestos, "Presupuestos de obra", "Presupuestos", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(Productos, "Productos", "Operación", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(CatalogoProveedor, "Catálogo y precios del proveedor", "Proveedor", AlcanceModulo.Tenant, TipoEmpresa.Proveedor),
     ];
+
+    /// <summary>Módulos que los roles de una empresa de ese tipo pueden recibir.</summary>
+    public static IEnumerable<ModuloDefinicion> ParaTipo(TipoEmpresa tipo) => Todos.Where(m => m.AplicaA(tipo));
 
     public static ModuloDefinicion? Buscar(string codigo) =>
         Todos.FirstOrDefault(m => string.Equals(m.Codigo, codigo, StringComparison.Ordinal));

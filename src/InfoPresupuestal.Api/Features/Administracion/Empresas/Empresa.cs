@@ -1,3 +1,5 @@
+using InfoPresupuestal.Api.Common.Security;
+
 namespace InfoPresupuestal.Api.Features.Administracion.Empresas;
 
 /// <summary>
@@ -20,6 +22,9 @@ public sealed class Empresa
 
     public string RazonSocial { get; private set; } = string.Empty;
 
+    /// <summary>Constructora o proveedor. Se fija al crear la empresa y no cambia.</summary>
+    public TipoEmpresa Tipo { get; private set; }
+
     public string? Nit { get; private set; }
 
     public string? Email { get; private set; }
@@ -32,12 +37,20 @@ public sealed class Empresa
 
     public bool EsPlataforma => TenantId == TenantPlataforma;
 
-    public static Empresa Create(string tenantId, string razonSocial, string? nit, string? email, string? telefono, DateTimeOffset now) =>
+    public static Empresa Create(
+        string tenantId,
+        string razonSocial,
+        string? nit,
+        string? email,
+        string? telefono,
+        DateTimeOffset now,
+        TipoEmpresa tipo = TipoEmpresa.Constructora) =>
         new()
         {
             Id = Guid.CreateVersion7(now),
             TenantId = tenantId.Trim().ToLowerInvariant(),
             RazonSocial = razonSocial.Trim(),
+            Tipo = tipo,
             Nit = Clean(nit),
             Email = Clean(email)?.ToLowerInvariant(),
             Telefono = Clean(telefono),

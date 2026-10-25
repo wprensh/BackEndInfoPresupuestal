@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InfoPresupuestal.Api.Features.Administracion.Empresas;
 
-/// <summary>Crea la empresa (tenant) con sus roles base y su primer administrador.</summary>
+/// <summary>Crea la empresa (tenant), constructora o proveedor, con sus roles base y su primer administrador.</summary>
 public sealed record CreateEmpresaCommand(
     string TenantId,
     string RazonSocial,
@@ -18,7 +18,8 @@ public sealed record CreateEmpresaCommand(
     string? Telefono,
     string AdminNombre,
     string AdminEmail,
-    string AdminPassword) : ICommand<EmpresaResponse>;
+    string AdminPassword,
+    TipoEmpresa Tipo = TipoEmpresa.Constructora) : ICommand<EmpresaResponse>;
 
 internal sealed class CreateEmpresaValidator : AbstractValidator<CreateEmpresaCommand>
 {
@@ -32,6 +33,7 @@ internal sealed class CreateEmpresaValidator : AbstractValidator<CreateEmpresaCo
         RuleFor(c => c.AdminNombre).NotEmpty().MaximumLength(UsuarioConfiguration.NombreMaxLength);
         RuleFor(c => c.AdminEmail).NotEmpty().EmailAddress().MaximumLength(UsuarioConfiguration.EmailMaxLength);
         RuleFor(c => c.AdminPassword).ContrasenaSegura();
+        RuleFor(c => c.Tipo).IsInEnum();
     }
 }
 
@@ -46,7 +48,7 @@ internal sealed class CreateEmpresaHandler(AppDbContext db, EmpresaProvisioner p
             return Error.Conflict("Empresas.TenantExists", $"Ya existe una empresa con el identificador '{tenantId}'.");
         }
 
-        var empresa = Empresa.Create(tenantId, command.RazonSocial, command.Nit, command.Email, command.Telefono, timeProvider.GetUtcNow());
+        var empresa = Empresa.Create(tenantId, command.RazonSocial, command.Nit, command.Email, command.Telefono, timeProvider.GetUtcNow(), command.Tipo);
         await provisioner.ProvisionAsync(empresa, command.AdminNombre, command.AdminEmail, command.AdminPassword, cancellationToken);
         return empresa.AsResponse();
     }

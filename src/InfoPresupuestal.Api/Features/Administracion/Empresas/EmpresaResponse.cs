@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using InfoPresupuestal.Api.Common.Security;
 
 namespace InfoPresupuestal.Api.Features.Administracion.Empresas;
 
@@ -6,6 +7,7 @@ public sealed record EmpresaResponse(
     Guid Id,
     string TenantId,
     string RazonSocial,
+    string Tipo,
     string? Nit,
     string? Email,
     string? Telefono,
@@ -15,7 +17,7 @@ public sealed record EmpresaResponse(
 internal static class EmpresaMapping
 {
     public static readonly Expression<Func<Empresa, EmpresaResponse>> ToResponse = e =>
-        new EmpresaResponse(e.Id, e.TenantId, e.RazonSocial, e.Nit, e.Email, e.Telefono, e.Activo, e.CreadoEn);
+        new EmpresaResponse(e.Id, e.TenantId, e.RazonSocial, e.Tipo == TipoEmpresa.Proveedor ? "PROVEEDOR" : "CONSTRUCTORA", e.Nit, e.Email, e.Telefono, e.Activo, e.CreadoEn);
 
     private static readonly Func<Empresa, EmpresaResponse> Compiled = ToResponse.Compile();
 

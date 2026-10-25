@@ -63,6 +63,12 @@ namespace InfoPresupuestal.Api.Common.Persistence.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("tenant_id");
 
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tipo");
+
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId")
@@ -407,6 +413,364 @@ namespace InfoPresupuestal.Api.Common.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Apus.Apu", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<DateTimeOffset>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("CreadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<DateOnly>("Fecha")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("observaciones");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<short>("UnidadMedidaId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("unidad_medida_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UnidadMedidaId");
+
+                    b.ToTable("apu", "presupuesto", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Apus.ApuDetalle", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("ApuId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("apu_id");
+
+                    b.Property<decimal>("Cantidad")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("cantidad");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<decimal>("Desperdicio")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("numeric(7,4)")
+                        .HasColumnName("desperdicio");
+
+                    b.Property<decimal>("FactorPrestacional")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("factor_prestacional");
+
+                    b.Property<Guid?>("InsumoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("insumo_id");
+
+                    b.Property<short>("Orden")
+                        .HasColumnType("smallint")
+                        .HasColumnName("orden");
+
+                    b.Property<decimal>("PrecioUnitario")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("precio_unitario");
+
+                    b.Property<decimal>("Rendimiento")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("rendimiento");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<short>("TipoInsumoId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("tipo_insumo_id");
+
+                    b.Property<short?>("UnidadMedidaId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("unidad_medida_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InsumoId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UnidadMedidaId");
+
+                    b.HasIndex("ApuId", "TipoInsumoId", "Orden")
+                        .IsUnique();
+
+                    b.ToTable("apu_detalle", "presupuesto", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.Presupuesto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
+                    b.Property<decimal>("AdministracionPct")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("administracion_pct");
+
+                    b.Property<decimal?>("AnticipoPct")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("anticipo_pct");
+
+                    b.Property<string>("Cliente")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("cliente");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("CreadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<int?>("DuracionDias")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracion_dias");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateOnly>("Fecha")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha");
+
+                    b.Property<decimal>("ImprevistosPct")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("imprevistos_pct");
+
+                    b.Property<decimal>("IvaUtilidadPct")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("iva_utilidad_pct");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("moneda")
+                        .IsFixedLength();
+
+                    b.Property<string>("NombreObra")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nombre_obra");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("observaciones");
+
+                    b.Property<string>("PropuestaNumero")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("propuesta_numero");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Ubicacion")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("ubicacion");
+
+                    b.Property<decimal>("UtilidadPct")
+                        .HasPrecision(6, 4)
+                        .HasColumnType("numeric(6,4)")
+                        .HasColumnName("utilidad_pct");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("presupuesto", "presupuesto", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoCapitulo", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nombre");
+
+                    b.Property<short>("Numero")
+                        .HasColumnType("smallint")
+                        .HasColumnName("numero");
+
+                    b.Property<Guid>("PresupuestoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("presupuesto_id");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("PresupuestoId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("presupuesto_capitulo", "presupuesto", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("ApuId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("apu_id");
+
+                    b.Property<decimal>("Cantidad")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("cantidad");
+
+                    b.Property<long>("CapituloId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("capitulo_id");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<short>("Numero")
+                        .HasColumnType("smallint")
+                        .HasColumnName("numero");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<short>("UnidadMedidaId")
+                        .HasColumnType("smallint")
+                        .HasColumnName("unidad_medida_id");
+
+                    b.Property<decimal>("ValorUnitario")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_unitario");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApuId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("UnidadMedidaId");
+
+                    b.HasIndex("CapituloId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("presupuesto_item", "presupuesto", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("InfoPresupuestal.Api.Features.Products.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -545,6 +909,86 @@ namespace InfoPresupuestal.Api.Common.Persistence.Migrations
                         .HasForeignKey("InsumoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Apus.Apu", b =>
+                {
+                    b.HasOne("InfoPresupuestal.Api.Features.Mantenimiento.UnidadesMedida.UnidadMedida", "UnidadMedida")
+                        .WithMany()
+                        .HasForeignKey("UnidadMedidaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("UnidadMedida");
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Apus.ApuDetalle", b =>
+                {
+                    b.HasOne("InfoPresupuestal.Api.Features.Presupuestos.Apus.Apu", null)
+                        .WithMany("Detalles")
+                        .HasForeignKey("ApuId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InfoPresupuestal.Api.Features.Mantenimiento.Insumos.Insumo", null)
+                        .WithMany()
+                        .HasForeignKey("InsumoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("InfoPresupuestal.Api.Features.Mantenimiento.UnidadesMedida.UnidadMedida", "UnidadMedida")
+                        .WithMany()
+                        .HasForeignKey("UnidadMedidaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("UnidadMedida");
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoCapitulo", b =>
+                {
+                    b.HasOne("InfoPresupuestal.Api.Features.Presupuestos.Obras.Presupuesto", null)
+                        .WithMany("Capitulos")
+                        .HasForeignKey("PresupuestoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoItem", b =>
+                {
+                    b.HasOne("InfoPresupuestal.Api.Features.Presupuestos.Apus.Apu", "Apu")
+                        .WithMany()
+                        .HasForeignKey("ApuId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoCapitulo", null)
+                        .WithMany("Items")
+                        .HasForeignKey("CapituloId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InfoPresupuestal.Api.Features.Mantenimiento.UnidadesMedida.UnidadMedida", "UnidadMedida")
+                        .WithMany()
+                        .HasForeignKey("UnidadMedidaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Apu");
+
+                    b.Navigation("UnidadMedida");
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Apus.Apu", b =>
+                {
+                    b.Navigation("Detalles");
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.Presupuesto", b =>
+                {
+                    b.Navigation("Capitulos");
+                });
+
+            modelBuilder.Entity("InfoPresupuestal.Api.Features.Presupuestos.Obras.PresupuestoCapitulo", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
