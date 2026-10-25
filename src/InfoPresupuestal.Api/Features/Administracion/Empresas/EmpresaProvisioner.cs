@@ -8,7 +8,7 @@ namespace InfoPresupuestal.Api.Features.Administracion.Empresas;
 
 /// <summary>
 /// Da de alta una empresa completa en una sola transacción: la empresa, sus roles
-/// Administrador y Consulta, y su primer usuario administrador.
+/// Administrador, Consulta y Proveedor, y su primer usuario administrador.
 /// </summary>
 internal sealed class EmpresaProvisioner(
     AppDbContext db,
@@ -32,7 +32,7 @@ internal sealed class EmpresaProvisioner(
         {
             var administrador = Rol.Create(Rol.Administrador, "Acceso completo a la empresa.", Rol.PermisosCompletos(), now, esSistema: true);
             var consulta = Rol.Create(Rol.Consulta, "Solo lectura.", Rol.PermisosSoloLectura(), now, esSistema: true);
-            db.AddRange(administrador, consulta);
+            db.AddRange(administrador, consulta, Rol.CrearProveedor(now));
 
             var admin = Usuario.Create(adminEmail, adminNombre, administrador.Id, now, adminEsSuperAdmin);
             admin.SetPasswordHash(passwordHasher.HashPassword(admin, adminPassword));
