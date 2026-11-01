@@ -60,12 +60,15 @@ public static class Modulos
     public const string Presupuestos = "presupuestos";
     public const string Proveedores = "proveedores";
     public const string CatalogoProveedor = "catalogo-proveedor";
+    public const string Impresion = "impresion";
+    public const string Programacion = "programacion";
 
     public static readonly IReadOnlyList<ModuloDefinicion> Todos =
     [
         new(Empresas, "Empresas", "Administración", AlcanceModulo.Plataforma),
         new(Usuarios, "Usuarios", "Administración", AlcanceModulo.Tenant),
         new(Roles, "Roles y permisos", "Administración", AlcanceModulo.Tenant),
+        new(Impresion, "Formato de impresión", "Administración", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(Clasificaciones, "Clasificaciones", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(UnidadesMedida, "Unidades de medida", "Mantenimiento", AlcanceModulo.Global),
         new(TiposInsumo, "Tipos de insumo", "Mantenimiento", AlcanceModulo.Global),
@@ -74,6 +77,7 @@ public static class Modulos
         new(Proveedores, "Proveedores", "Mantenimiento", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(Apu, "Análisis de precios unitarios", "Presupuestos", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(Presupuestos, "Presupuestos de obra", "Presupuestos", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
+        new(Programacion, "Programación de obra (Gantt)", "Presupuestos", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(Productos, "Productos", "Operación", AlcanceModulo.Tenant, TipoEmpresa.Constructora),
         new(CatalogoProveedor, "Catálogo y precios del proveedor", "Proveedor", AlcanceModulo.Tenant, TipoEmpresa.Proveedor),
     ];
