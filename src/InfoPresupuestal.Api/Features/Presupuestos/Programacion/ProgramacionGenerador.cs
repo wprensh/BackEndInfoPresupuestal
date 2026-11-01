@@ -7,7 +7,7 @@ namespace InfoPresupuestal.Api.Features.Presupuestos.Programacion;
 /// <list type="bullet">
 /// <item>cada capítulo es un resumen (<c>project</c>) y sus ítems son actividades;</item>
 /// <item>el plazo se reparte entre capítulos según su peso en el costo directo y los capítulos van uno tras otro (fin-inicio);</item>
-/// <item>dentro del capítulo, los ítems se escalonan según su peso y pueden traslaparse;</item>
+/// <item>dentro del capítulo, los ítems se escalonan según su peso, pueden traslaparse y el último termina con el capítulo;</item>
 /// <item>al final queda el hito "Entrega de obra".</item>
 /// </list>
 /// </summary>
@@ -51,7 +51,10 @@ internal static class ProgramacionGenerador
                 var peso = total == 0 ? 1m / items.Count : valores[i] / total;
                 var desplazamiento = (int)Math.Floor(acumulado * duracion);
                 desplazamiento = Math.Min(desplazamiento, duracion - 1);
-                var dias = Math.Clamp((int)Math.Round(peso * duracion, MidpointRounding.AwayFromZero), 1, duracion - desplazamiento);
+                // El último ítem llega hasta el fin del capítulo: así el capítulo dura lo asignado y la cadena no deja holguras falsas.
+                var dias = i == items.Count - 1
+                    ? duracion - desplazamiento
+                    : Math.Clamp((int)Math.Round(peso * duracion, MidpointRounding.AwayFromZero), 1, duracion - desplazamiento);
                 acumulado += peso;
                 tareas.Add(new TareaDatos(
                     nuevoId(), capituloId, tareas.Count, TipoTarea.Tarea, item.Descripcion, PresupuestoMapping.Codigo(capitulo.Numero, item.Numero),

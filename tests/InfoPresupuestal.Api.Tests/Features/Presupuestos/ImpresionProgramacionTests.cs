@@ -98,6 +98,14 @@ public sealed class ImpresionProgramacionTests
         Assert.Equal(["1", "1.1", "1.2", "2", "2.1", null], p.Tareas.Select(t => t.Referencia));
         Assert.All(p.Tareas.Where(t => t.Tipo == "task"), t => Assert.Equal(p.Tareas.Single(c => c.Id == t.ParentId).Referencia, t.Referencia![..1]));
         Assert.Equal(Inicio.AddDays(20), p.Tareas[^1].FechaInicio);
+
+        // Las actividades de cada capítulo cubren todo su plazo.
+        foreach (var capitulo in p.Tareas.Where(t => t.Tipo == "project"))
+        {
+            var hijos = p.Tareas.Where(t => t.ParentId == capitulo.Id).ToList();
+            Assert.Equal(capitulo.FechaInicio, hijos.Min(h => h.FechaInicio));
+            Assert.Equal(capitulo.FechaFin, hijos.Max(h => h.FechaFin));
+        }
         Assert.Equal(2, p.Vinculos.Count);
 
         // Una segunda generación no pisa el trabajo sin confirmación.
