@@ -103,3 +103,12 @@ CREATE TABLE IF NOT EXISTS presupuesto.programacion_vinculo (
 CREATE INDEX IF NOT EXISTS ix_programacion_vinculo_presupuesto ON presupuesto.programacion_vinculo (presupuesto_id);
 CREATE INDEX IF NOT EXISTS ix_programacion_vinculo_tenant ON presupuesto.programacion_vinculo (tenant_id);
 COMMENT ON TABLE presupuesto.programacion_vinculo IS 'Dependencia entre actividades: 0 fin-inicio, 1 inicio-inicio, 2 fin-fin, 3 inicio-fin; desfase en días.';
+
+-- Si la API usa el rol "infopresupuestal" (instalación local), le da acceso a las tablas nuevas.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'infopresupuestal') THEN
+        GRANT SELECT, INSERT, UPDATE, DELETE ON presupuesto.configuracion_impresion, presupuesto.programacion,
+            presupuesto.programacion_tarea, presupuesto.programacion_vinculo TO infopresupuestal;
+    END IF;
+END $$;
