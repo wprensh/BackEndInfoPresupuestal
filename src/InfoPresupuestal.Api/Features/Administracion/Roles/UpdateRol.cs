@@ -22,8 +22,12 @@ internal sealed class UpdateRolValidator : AbstractValidator<UpdateRolRequest>
     }
 }
 
-/// <summary>Los cambios de permisos aplican cuando los usuarios del rol vuelven a iniciar sesión.</summary>
-internal sealed class UpdateRolHandler(AppDbContext db) : ICommandHandler<UpdateRolCommand, RolResponse>
+/// <summary>
+/// Los cambios de permisos aplican cuando los usuarios del rol vuelven a iniciar sesión.
+/// Los roles de sistema (Administrador, Consulta, Proveedor) solo los edita el superadministrador, y de ellos
+/// cambian la descripción y los permisos; el nombre se conserva porque la aplicación los busca por nombre.
+/// </summary>
+internal sealed class UpdateRolHandler(AppDbContext db, ICurrentUser currentUser) : ICommandHandler<UpdateRolCommand, RolResponse>
 {
     public async Task<Result<RolResponse>> HandleAsync(UpdateRolCommand command, CancellationToken cancellationToken)
     {
@@ -35,7 +39,14 @@ internal sealed class UpdateRolHandler(AppDbContext db) : ICommandHandler<Update
 
         if (rol.EsSistema)
         {
-            return RolesApi.EsSistema();
+            if (!currentUser.IsSuperAdmin)
+            {
+                return RolesApi.EsSistema();
+            }
+
+            rol.UpdateSistema(command.Datos.Descripcion, command.Datos.Permisos.ToEntities(conservarSinAcciones: true));
+            await db.SaveChangesAsync(cancellationToken);
+            return rol.AsResponse();
         }
 
         var nombre = command.Datos.Nombre.Trim();

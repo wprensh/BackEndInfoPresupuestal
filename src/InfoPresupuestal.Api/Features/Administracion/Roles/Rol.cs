@@ -25,7 +25,7 @@ public sealed class Rol : ITenantEntity
 
     public string? Descripcion { get; private set; }
 
-    /// <summary>Roles creados con la empresa: no se editan ni se eliminan.</summary>
+    /// <summary>Roles creados con la empresa: no se eliminan y solo el superadministrador los edita.</summary>
     public bool EsSistema { get; private set; }
 
     public DateTimeOffset CreadoEn { get; private set; }
@@ -53,6 +53,9 @@ public sealed class Rol : ITenantEntity
         _permisos.Clear();
         _permisos.AddRange(permisos);
     }
+
+    /// <summary>Edición de un rol de sistema (solo superadministrador): el nombre no cambia.</summary>
+    public void UpdateSistema(string? descripcion, IEnumerable<RolPermiso> permisos) => Update(Nombre, descripcion, permisos);
 
     /// <summary>
     /// Agrega los módulos que el rol aún no tiene (módulos nuevos de la aplicación). No toca los existentes.
