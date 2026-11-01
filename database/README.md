@@ -19,6 +19,8 @@ psql -h localhost -U postgres -d infopresupuestal -v tenant=acme -f database/ins
 | `03_carga_excel.sql` | Copia el Excel tal cual, como texto, a `carga.insumo_excel`. **Es un archivo generado.** |
 | `04_normalizar_insumos.sql` | Limpia los datos de `carga` y los pasa a `presupuesto` para el tenant. |
 | `05_apu_presupuesto.sql` | Crea las tablas de APU y presupuestos de obra (ver abajo). No carga datos. |
+| `06_proveedores.sql` | Catálogo propio de las empresas proveedoras. |
+| `07_impresion_programacion.sql` | Formato de impresión por empresa y programación de obra (Gantt). |
 
 Si actualizas el Excel, regenera el script 03 con `pip install xlrd && python database/herramientas/xls_a_sql.py "<ruta>.xls"` y vuelve a ejecutar `instalar.sql`.
 
@@ -151,3 +153,20 @@ Si la API usa otro usuario de base de datos, repite los `GRANT` de la sección a
 | `proveedor_producto` | Producto del proveedor: código propio (SKU), descripción, tipo de insumo, unidad, marca, categoría | Código único por proveedor |
 | `proveedor_precio` | Historial de precios por producto, ciudad y fecha de vigencia | `ciudad` NULL = nacional; `incluye_iva` + `iva_pct` (fracción); un precio por producto, ciudad y fecha |
 | `v_proveedor_precio_vigente` (vista) | Último precio de cada producto en cada ciudad, con valor sin IVA y con IVA | |
+
+## Formato de impresión y programación de obra
+
+`07_impresion_programacion.sql` (idempotente) agrega el membrete con que cada empresa imprime sus presupuestos y la programación de obra que se edita con el diagrama de Gantt. Para agregarlo a una base existente (local o Neon):
+
+```bash
+psql -h localhost -U postgres -d infopresupuestal -f database/scripts/07_impresion_programacion.sql
+```
+
+Si la API usa otro usuario de base de datos, repite los `GRANT` de la sección de APU para las tablas nuevas.
+
+| Tabla | Qué guarda | Reglas principales |
+|---|---|---|
+| `configuracion_impresion` | Una fila por empresa: razón social impresa, NIT, dirección, contacto, logo (bytea), color, encabezado, pie de página, firma y qué columnas se imprimen | Logo PNG, JPG o WebP de máximo 512 KB; los campos vacíos toman el valor de `seguridad.empresa` |
+| `programacion` | Una por presupuesto: fecha de inicio y escala con que se abre el Gantt | Se borra con el presupuesto |
+| `programacion_tarea` | Capítulos (`project`), actividades (`task`) e hitos (`milestone`) con inicio, duración en días calendario, avance, responsable, color, notas, valor y línea base | Ids uuid generados por el diagrama; `referencia` guarda el consecutivo del presupuesto ("2.3") sin FK, porque los ítems se renumeran |
+| `programacion_vinculo` | Dependencias: 0 fin-inicio, 1 inicio-inicio, 2 fin-fin, 3 inicio-fin, con desfase en días | Sin vínculos de una actividad consigo misma |

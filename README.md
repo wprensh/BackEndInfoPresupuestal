@@ -168,6 +168,18 @@ Tablas en `database/scripts/05_apu_presupuesto.sql` (ver `database/README.md`). 
 | `POST /api/presupuestos/{id}/recalcular` | Trae a los ítems el costo actual de sus APU (`itemsDesactualizados` dice cuántos cambiaron). |
 | `POST /api/presupuestos/{id}/duplicar` | Copia como borrador nuevo. |
 
+## Impresión y programación de obra
+
+Tablas en `database/scripts/07_impresion_programacion.sql`. Módulos de permiso `impresion` (grupo Administración) y `programacion` (grupo Presupuestos), solo para constructoras; los roles de sistema existentes los reciben al arrancar.
+
+| Endpoint | Permiso | Qué hace |
+|---|---|---|
+| `GET/PUT /api/impresion/configuracion` | impresion | Membrete de la empresa: razón social, NIT, contacto, logo como data URL (PNG, JPG o WebP, máx. 512 KB, se revisa la firma del archivo), color, encabezado, pie, firma y columnas a imprimir. Sin configurar responde los datos de la empresa. |
+| `GET /api/presupuestos/{id}/impresion` | presupuestos:ver | Membrete + presupuesto completo (capítulos con sus ítems, subtotales, AIU y total) para la hoja impresa. |
+| `GET /api/programaciones` | programacion:ver | Presupuestos no anulados con su programación: inicio, fin, actividades y avance ponderado. |
+| `GET/PUT/DELETE /api/presupuestos/{id}/programacion` | programacion | Diagrama completo (actividades y vínculos). `PUT` guarda el conjunto: actualiza por id, agrega y quita; valida padres, ciclos y vínculos. |
+| `POST /api/presupuestos/{id}/programacion/generar` | programacion:insertar | Crea la programación desde los capítulos e ítems: reparte el plazo según el peso de cada capítulo, escalona los ítems y agrega el hito de entrega. Con `reemplazar: true` rehace una existente. |
+
 ## Mantenimiento de tablas
 
 CRUD con búsqueda y paginación (`?page=1&pageSize=20&search=texto`) sobre el esquema `presupuesto`:

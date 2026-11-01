@@ -13,7 +13,7 @@ internal static class RolesApi
 
     public static Error NombreDuplicado(string nombre) => Error.Conflict("Roles.NombreDuplicado", $"Ya existe un rol llamado '{nombre}'.");
 
-    public static Error EsSistema() => Error.Conflict("Roles.Sistema", "Los roles Administrador y Consulta no se modifican ni se eliminan.");
+    public static Error EsSistema() => Error.Conflict("Roles.Sistema", "Los roles de sistema (Administrador, Consulta y Proveedor) solo los modifica el superadministrador y no se eliminan.");
 }
 
 /// <summary>Una fila de la matriz de permisos: un módulo y las cuatro acciones.</summary>
@@ -29,9 +29,13 @@ internal static class RolMapping
         new(rol.Id, rol.Nombre, rol.Descripcion, rol.EsSistema,
             rol.Permisos.OrderBy(p => p.Modulo).Select(p => new PermisoDto(p.Modulo, p.Ver, p.Insertar, p.Editar, p.Eliminar)).ToList());
 
-    public static IEnumerable<RolPermiso> ToEntities(this IEnumerable<PermisoDto> permisos) =>
+    /// <param name="conservarSinAcciones">
+    /// En roles de sistema se guardan también los módulos sin ninguna acción: así el arranque, que completa los
+    /// módulos que les faltan, no devuelve un permiso que el superadministrador quitó a propósito.
+    /// </param>
+    public static IEnumerable<RolPermiso> ToEntities(this IEnumerable<PermisoDto> permisos, bool conservarSinAcciones = false) =>
         permisos
-            .Where(p => p.Ver || p.Insertar || p.Editar || p.Eliminar)
+            .Where(p => conservarSinAcciones || p.Ver || p.Insertar || p.Editar || p.Eliminar)
             .Select(p => RolPermiso.Create(p.Modulo, p.Ver, p.Insertar, p.Editar, p.Eliminar));
 }
 
